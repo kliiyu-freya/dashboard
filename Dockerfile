@@ -1,10 +1,8 @@
 # Dockerfile
 
-FROM node:lts-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 
-# By copying only the package.json and package-lock.json here, we ensure that the following `-deps` steps are independent of the source code.
-# Therefore, the `-deps` steps will be skipped if only the source code changes.
 COPY package.json package-lock.json ./
 
 FROM base AS prod-deps
@@ -24,4 +22,5 @@ COPY --from=build /app/dist ./dist
 ENV HOST=0.0.0.0
 ENV PORT=6673
 EXPOSE 6673
+
 CMD node ./dist/server/entry.mjs
