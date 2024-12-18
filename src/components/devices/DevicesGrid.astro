@@ -1,0 +1,31 @@
+---
+import DeviceCard from './DeviceCard.astro';
+import { devices } from '../../stores/websocket';
+
+const initialDevices = devices.get();
+---
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="devices-grid">
+  {initialDevices.map((device) => (
+    <DeviceCard device={device} />
+  ))}
+</div>
+
+<script>
+  import { devices } from '../../stores/websocket';
+
+  // Update the grid when devices change
+  devices.subscribe((newDevices) => {
+    const grid = document.getElementById('devices-grid');
+    if (!grid) return;
+
+    // Re-render the grid with new devices
+    grid.innerHTML = newDevices.map(device => {
+      return `
+        <div class="device-card" data-device-id="${device.id}">
+          <!-- Device card template -->
+        </div>
+      `;
+    }).join('');
+  });
+</script>

@@ -4,16 +4,11 @@ import Header from '../components/layout/Header.astro';
 import DevicesGrid from '../components/devices/DevicesGrid.astro';
 ---
 
-<Layout title="Dashboard - Home Automation">
+<Layout title="Devices - Home Automation">
   <div class="min-h-screen p-4">
-    <Header>Dashboard</Header>
+    <Header>Devices</Header>
     <main class="mt-6">
       <DevicesGrid />
     </main>
   </div>
 </Layout>
-
-<script>
-  import { connectWebSocket } from '../stores/websocket';
-  connectWebSocket();
-</script>

@@ -1,0 +1,76 @@
+---
+interface Props {
+  device: {
+    id: string;
+    name: string;
+    type: string;
+    state: string;
+  };
+}
+
+const { device } = Astro.props;
+
+const getDeviceIcon = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'light': return 'lightbulb';
+    case 'thermostat': return 'thermostat';
+    case 'camera': return 'videocam';
+    case 'lock': return 'lock';
+    case 'switch': return 'power_settings_new';
+    default: return 'devices_other';
+  }
+};
+
+const getStateColor = (state: string) => {
+  switch (state.toLowerCase()) {
+    case 'on':
+    case 'active':
+    case 'online': return 'text-green-500';
+    case 'off':
+    case 'inactive':
+    case 'offline': return 'text-gray-400';
+    default: return 'text-yellow-500';
+  }
+};
+---
+
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+  <div class="flex items-start justify-between mb-4">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-gray-700 flex items-center justify-center">
+        <span class="material-icons-round text-purple-600 dark:text-purple-400">
+          {getDeviceIcon(device.type)}
+        </span>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {device.name}
+        </h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {device.type}
+        </p>
+      </div>
+    </div>
+    <span class={`material-icons-round ${getStateColor(device.state)}`}>
+      {device.state.toLowerCase() === 'on' ? 'radio_button_checked' : 'radio_button_unchecked'}
+    </span>
+  </div>
+  
+  <button
+    data-device-id={device.id}
+    class="toggle-device w-full bg-gray-100 dark:bg-gray-700 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-lg transition-colors"
+  >
+    Toggle
+  </button>
+</div>
+
+<script>
+  const deviceId = document.currentScript?.parentElement?.querySelector('.toggle-device')?.getAttribute('data-device-id');
+  
+  if (deviceId) {
+    document.currentScript?.parentElement?.querySelector('.toggle-device')?.addEventListener('click', async () => {
+      const { sendCommand } = await import('../../stores/websocket');
+      sendCommand(deviceId, 'toggle');
+    });
+  }
+</script>
