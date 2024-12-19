@@ -1,14 +1,30 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/layout/Header.astro';
-import DevicesGrid from '../components/devices/DevicesGrid.astro';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.astro';
 ---
 
-<Layout title="Devices - Home Automation">
-  <div class="min-h-screen p-4">
-    <Header>Devices</Header>
-    <main class="mt-6">
-      <DevicesGrid />
-    </main>
+<DashboardLayout title="Devices">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <Card title="Living Room">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <span class="material-icons-outlined text-primary-500 mr-2">lightbulb</span>
+            <span>Main Light</span>
+          </div>
+          <button class="text-primary-600 dark:text-primary-500">
+            <span class="material-icons-outlined">power_settings_new</span>
+          </button>
+        </div>
+        
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <span class="material-icons-outlined text-primary-500 mr-2">thermostat</span>
+            <span>Thermostat</span>
+          </div>
+          <span>72°F</span>
+        </div>
+      </div>
+    </Card>
   </div>
-</Layout>
+</DashboardLayout>

@@ -1,0 +1,17 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import SystemStatusCard from '../components/system/SystemStatusCard.astro';
+import NetworkStatusCard from '../components/system/NetworkStatusCard.astro';
+---
+
+<DashboardLayout title="System">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <system-status>
+      <SystemStatusCard />
+    </system-status>
+    
+    <network-status>
+      <NetworkStatusCard />
+    </network-status>
+  </div>
+</DashboardLayout>

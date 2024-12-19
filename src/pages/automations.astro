@@ -1,0 +1,25 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.astro';
+---
+
+<DashboardLayout title="Automations">
+  <div class="space-y-6">
+    <Card title="Morning Routine">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <span class="material-icons-outlined text-primary-500 mr-2">schedule</span>
+            <span>7:00 AM</span>
+          </div>
+          <button class="text-primary-600 dark:text-primary-500">
+            <span class="material-icons-outlined">edit</span>
+          </button>
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Turn on lights, adjust temperature, start coffee maker
+        </div>
+      </div>
+    </Card>
+  </div>
+</DashboardLayout>

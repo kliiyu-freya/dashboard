@@ -1,19 +1,41 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/layout/Header.astro';
-import DevicesGrid from '../components/devices/DevicesGrid.astro';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.astro';
 ---
 
-<Layout title="Dashboard - Home Automation">
-  <div class="min-h-screen p-4">
-    <Header>Dashboard</Header>
-    <main class="mt-6">
-      <DevicesGrid />
-    </main>
+<DashboardLayout title="Dashboard">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <Card title="Device Status">
+      <div class="device-count text-4xl font-bold text-primary-600 dark:text-primary-500">--</div>
+      <div class="text-sm text-gray-600 dark:text-gray-400">Active Connections</div>
+    </Card>
+    
+    <Card title="System Health">
+      <div class="flex items-center">
+        <span class="material-icons-outlined text-green-500 mr-2">check_circle</span>
+        <span>All Systems Operational</span>
+      </div>
+    </Card>
+
+    <Card title="Recent Activity">
+      <ul class="space-y-4">
+        <li class="flex items-center text-sm">
+          <span class="material-icons-outlined text-gray-400 mr-2">lightbulb</span>
+          <span>Living Room Lights turned on</span>
+        </li>
+        <li class="flex items-center text-sm">
+          <span class="material-icons-outlined text-gray-400 mr-2">thermostat</span>
+          <span>Temperature adjusted to 72°F</span>
+        </li>
+      </ul>
+    </Card>
   </div>
-</Layout>
+</DashboardLayout>
 
 <script>
-  import { connectWebSocket } from '../stores/websocket';
-  connectWebSocket();
+  let deviceCount = document.querySelector('.device-count');
+
+  window.addEventListener('freya:network_info', (event: CustomEvent) => {
+    deviceCount.textContent = event.detail.connections;
+  });
 </script>

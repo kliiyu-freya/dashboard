@@ -1,0 +1,26 @@
+---
+---
+
+<div class="connection-indicator flex items-center ml-8">
+  <span class="connection-dot h-2.5 w-2.5 rounded-full bg-red-500 transition-colors duration-300"></span>
+  <span class="connection-text ml-2 connection-text">Disconnected</span>
+</div>
+
+<script>
+  let statusDot = document.querySelector('.connection-dot');
+  let statusText = document.querySelector('.connection-text');
+
+  window.addEventListener('wsConnected', () => updateStatus(true));
+  window.addEventListener('wsDisconnected', () => updateStatus(false));
+
+  function updateStatus(connected) {
+    if (!statusDot) return;
+    if (!statusText) return;
+
+    // Remove old status
+    statusDot.classList.remove('bg-red-500', 'bg-green-500');
+    // Add new status
+    statusDot.classList.add(connected ? 'bg-green-500' : 'bg-red-500');
+    statusText.textContent = connected ? 'Connected' : 'Disconnected';
+  }
+</script>

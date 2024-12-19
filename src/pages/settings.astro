@@ -1,18 +1,25 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Header from '../components/layout/Header.astro';
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.astro';
 ---
 
-<Layout title="Settings - Home Automation">
-  <div class="min-h-screen p-4">
-    <Header>Settings</Header>
-    <main class="mt-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-semibold mb-4">System Settings</h2>
-        <p class="text-gray-600 dark:text-gray-400">
-          Configure your home automation system settings here.
-        </p>
+<DashboardLayout title="Settings">
+  <div class="space-y-6 max-w-2xl">
+    <Card title="General Settings">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <span>Dark Mode</span>
+          <button class="text-primary-600 dark:text-primary-500">
+            <span class="material-icons-outlined">dark_mode</span>
+          </button>
+        </div>
+        <div class="flex items-center justify-between">
+          <span>Notifications</span>
+          <button class="text-primary-600 dark:text-primary-500">
+            <span class="material-icons-outlined">notifications</span>
+          </button>
+        </div>
       </div>
-    </main>
+    </Card>
   </div>
-</Layout>
+</DashboardLayout>

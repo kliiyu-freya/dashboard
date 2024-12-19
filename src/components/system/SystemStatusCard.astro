@@ -1,0 +1,65 @@
+---
+import Card from '../ui/Card.astro';
+import Icon from '../ui/Icon.astro';
+import type { SystemStatus } from '../../utils/types';
+
+interface Props {
+  initialStatus?: SystemStatus;
+}
+
+const { initialStatus } = Astro.props;
+---
+
+<Card title="System Status">
+  <div class="space-y-4" id="system-status">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon name="memory" class="text-primary-500" />
+        <span>CPU Usage</span>
+      </div>
+      <span class="cpu-usage">--</span>
+    </div>
+    
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon name="storage" class="text-primary-500" />
+        <span>Memory Usage</span>
+      </div>
+      <span class="memory-usage">--</span>
+    </div>
+    
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon name="schedule" class="text-primary-500" />
+        <span>Uptime</span>
+      </div>
+      <span class="uptime">--</span>
+    </div>
+  </div>
+</Card>
+
+<script>
+  window.addEventListener('freya:system_info', (event: CustomEvent) => {
+    updateStatus(event.detail);
+  });
+
+  function updateStatus(data) {
+    // Update CPU Usage
+    const cpuElement = document.querySelector('.cpu-usage');
+    if (cpuElement) {
+      cpuElement.textContent = `${data.cpuUsage}%`;
+    }
+    
+    // Update Memory Usage
+    const memoryElement = document.querySelector('.memory-usage');
+    if (memoryElement) {
+      memoryElement.textContent = `${data.memoryUsage.used}GB / ${data.memoryUsage.total}GB`;
+    }
+    
+    // Update Uptime
+    const uptimeElement = document.querySelector('.uptime');
+    if (uptimeElement) {
+      uptimeElement.textContent = `${data.uptime} hours`;
+    }
+  }
+</script>

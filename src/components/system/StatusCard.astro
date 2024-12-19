@@ -1,0 +1,28 @@
+---
+import Card from '../ui/Card.astro';
+import Icon from '../ui/Icon.astro';
+import type { SystemStatus } from '../../utils/types';
+
+interface Props {
+  status: SystemStatus;
+}
+
+const { status } = Astro.props;
+---
+
+<Card title="System Status">
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <span>CPU Usage</span>
+      <span>{status.cpuUsage}%</span>
+    </div>
+    <div class="flex items-center justify-between">
+      <span>Memory Usage</span>
+      <span>{status.memoryUsage.used}GB / {status.memoryUsage.total}GB</span>
+    </div>
+    <div class="flex items-center justify-between">
+      <span>Uptime</span>
+      <span>{status.uptime} days</span>
+    </div>
+  </div>
+</Card>

@@ -1,0 +1,61 @@
+---
+import Card from '../ui/Card.astro';
+import Icon from '../ui/Icon.astro';
+import type { SystemStatus } from '../../utils/types';
+
+interface Props {
+  initialStatus?: SystemStatus;
+}
+
+const { initialStatus } = Astro.props;
+---
+
+<Card title="Network Status">
+  <div class="space-y-4" id="network-status">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon name="devices" class="text-primary-500" />
+        <span>Active Connections</span>
+      </div>
+      <span class="connected-devices">--</span>
+    </div>
+    
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <Icon name="wifi" class="text-primary-500" />
+        <span>Network Status</span>
+      </div>
+      <span class="network-status flex items-center gap-2">
+        <Icon name="wifi_off" class="text-red-500" />
+        <span class="status-text">Disconnected</span>
+      </span>
+    </div>
+  </div>
+</Card>
+
+<script>
+  window.addEventListener('freya:network_info', (event: CustomEvent) => {
+    updateStatus(event.detail);
+  });
+
+  function updateStatus(data) {
+    // Update Connected Devices
+    const devicesElement = document.querySelector('.connected-devices');
+    if (devicesElement) {
+      devicesElement.textContent = data.connections;
+    }
+    
+    // Update Network Status
+    const statusElement = document.querySelector('.network-status');
+    const statusIcon = statusElement?.querySelector('.material-symbols-outlined');
+    const statusText = statusElement?.querySelector('.status-text');
+    
+    if (statusIcon && statusText) {
+      const isConnected = data.networkStatus === 'connected';
+      statusIcon.textContent = isConnected ? 'wifi' : 'wifi_off';
+      statusIcon.classList.remove(isConnected ? 'text-red-500' : 'text-green-500');
+      statusIcon.classList.add(isConnected ? 'text-green-500' : 'text-red-500');
+      statusText.textContent = isConnected ? 'Connected' : 'Disconnected';
+    }
+  }
+</script>
