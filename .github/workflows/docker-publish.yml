@@ -3,6 +3,7 @@ name: Docker Build and Publish
 on:
   push:
     branches: [ main, dev ]
+    tags: [ 'v*.*.*', 'latest' ]
 
 env:
   REGISTRY: ghcr.io
@@ -32,19 +33,10 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-      - name: Set Docker image tags
-        id: set-tags
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
-            echo "tags=dev" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tags=latest" >> $GITHUB_ENV
-          fi
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ env.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
