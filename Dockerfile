@@ -1,23 +1,22 @@
-# Dockerfile
-
-# Build stage
-FROM node:18-bullseye AS builder
+# build
+FROM node:18-alpine as builder
 
 WORKDIR /app
+
 COPY package*.json ./
+
 RUN npm install
+
 COPY . .
+
 RUN npm run build
 
-# Production stage
-FROM node:18-bullseye-slim
+# nginx
+FROM nginx:alpine
 
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-RUN npm install --production
+EXPOSE 80
 
-EXPOSE 6672
-
-CMD ["node", "./dist/server/entry.mjs"]
+CMD ["nginx", "-g", "daemon off;"]
