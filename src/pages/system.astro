@@ -15,3 +15,12 @@ import NetworkStatusCard from '../components/system/NetworkStatusCard.astro';
     </network-status>
   </div>
 </DashboardLayout>
+
+<script>
+  import { sendWebSocketMessage } from "../utils/websocket";
+
+  window.addEventListener('wsConnected', () => {
+    const message = {type: 'request_system_info'};
+    sendWebSocketMessage(message);
+  });
+</script>
