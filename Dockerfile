@@ -16,6 +16,8 @@ RUN apk add --no-cache avahi
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
+RUN chmod +x /etc/nginx/nginx.sh
+
 EXPOSE 80
 EXPOSE 6673
 CMD ["sh", "-c", "avahi-daemon & nginx -g 'daemon off;'"]
