@@ -31,5 +31,16 @@ const { title } = Astro.props;
   import { initializeWebSocket } from '../utils/websocket';
   
   // Initialize WebSocket connection
-  initializeWebSocket('ws://localhost:6672/ws');
+  const coreIpCookie = document.cookie.split('; ').find(row => row.startsWith('coreIp='));
+  const corePortCookie = document.cookie.split('; ').find(row => row.startsWith('corePort='));
+  
+  let url = `ws://localhost:6672/ws`;
+  if (coreIpCookie && corePortCookie) {
+    const ip = coreIpCookie.split('=')[1];
+    const port = corePortCookie.split('=')[1];
+    if (ip !== '' && port !== '') {
+      url = `ws://${ip}:${port}/ws`;
+    }
+  }
+  initializeWebSocket(url);
 </script>
