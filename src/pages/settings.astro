@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Card from '../components/Card.astro';
+import Toggle from '../components/ui/Toggle.astro';
 ---
 
 <DashboardLayout title="Settings">
@@ -28,16 +29,14 @@ import Card from '../components/Card.astro';
     <Card title="General Settings">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <span>Dark Mode</span>
+          <span>Color Theme</span>
           <button class="text-primary-600 dark:text-primary-500">
             <span class="material-icons-outlined">dark_mode</span>
           </button>
         </div>
-        <div class="flex items-center justify-between">
+        <div id="notifications-toggle" class="flex items-center justify-between">
           <span>Notifications</span>
-          <button class="text-primary-600 dark:text-primary-500">
-            <span class="material-icons-outlined">notifications</span>
-          </button>
+          <Toggle id="notifications-toggle" checked=true/>
         </div>
       </div>
     </Card>
@@ -46,6 +45,36 @@ import Card from '../components/Card.astro';
 </DashboardLayout>
 
 <script>
+  function getSettingsCookie() {
+    const settingsCookie = document.cookie.split('; ').find(row => row.startsWith('settings='));
+    let settings = {};
+    if (settingsCookie) {
+        try {
+            settings = JSON.parse(decodeURIComponent(settingsCookie.split('=')[1]));
+        } catch (error) {
+            console.error('Failed to parse settings cookie:', error);
+        }
+    }
+    return settings;
+  }
+
+  function updateSettingsCookie(settings: Record<string, any>) {
+    document.cookie = `settings=${encodeURIComponent(JSON.stringify(settings))}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
+  }
+  
+  function handleNotificationToggle(newState: boolean) {
+    let settings = getSettingsCookie();
+    settings["notifications"] = newState;
+    updateSettingsCookie(settings);
+    console.log(`Notifications are now ${newState ? 'enabled' : 'disabled'}`);
+  }
+
+  const notificationsToggle = document.getElementById('notifications-toggle') as HTMLInputElement;
+  notificationsToggle.addEventListener('change', (event) => {
+    handleNotificationToggle((event.target as HTMLInputElement).checked);
+  });
+  
+
   document.getElementById('update-connection-address-button').addEventListener('click', function() {
     const coreIp = (document.getElementById('core-ip') as HTMLInputElement).value;
     const corePort = (document.getElementById('core-port') as HTMLInputElement).value;
@@ -54,8 +83,10 @@ import Card from '../components/Card.astro';
     }
 
     console.log(`Updating connection address to ${coreIp}:${corePort}`);
-    document.cookie = `coreIp=${coreIp}; path=/`;
-    document.cookie = `corePort=${corePort}; path=/`;
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 100);
+    document.cookie = `coreIp=${coreIp}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
+    document.cookie = `corePort=${corePort}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
     location.reload();
   });
 
