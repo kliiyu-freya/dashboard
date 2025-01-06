@@ -1,0 +1,22 @@
+---
+import DashboardLayout from '../layouts/DashboardLayout.astro';
+import Card from '../components/Card.astro';
+import Icon from '../components/ui/Icon.astro';
+---
+
+<DashboardLayout title="Assistant">
+  <div class="space-y-6">
+    <Card title="Assistant">
+      <div class="space-y-4">
+
+        <div class="flex items-center border rounded-lg p-2">
+            <input type="text" placeholder="Type your message..." class="flex-grow p-2 border-none outline-none" />
+            <button class="mr-4 mt-1">
+                <Icon name="send" class="text-primary-500" />
+            </button>
+        </div>
+
+      </div>
+    </Card>
+  </div>
+</DashboardLayout>
