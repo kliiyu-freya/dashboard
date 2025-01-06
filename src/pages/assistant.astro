@@ -9,9 +9,11 @@ import Icon from '../components/ui/Icon.astro';
     <Card title="Assistant">
       <div class="space-y-4">
 
+        <div id="chat" class="space-y-4 max-h-[70vh] h-[70vh] overflow-scroll no-scrollbar"></div>
+
         <div class="flex items-center border rounded-lg p-2">
             <input type="text" placeholder="Type your message..." class="flex-grow p-2 border-none outline-none" />
-            <button class="mr-4 mt-1">
+            <button id="send-button" class="mr-4 mt-1 cursor-pointer">
                 <Icon name="send" class="text-primary-500" />
             </button>
         </div>
@@ -20,3 +22,72 @@ import Icon from '../components/ui/Icon.astro';
     </Card>
   </div>
 </DashboardLayout>
+
+<style>
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+</style>
+
+<script>
+  import { sendWebSocketMessage } from "../utils/websocket";
+
+  const assistantRequestType = 'friday_assistant_request';
+  const assistantResponseType = 'friday_assistant_response';
+
+  function addMessage(message: string, response: boolean) {
+    const chat = document.getElementById('chat');
+    const newMessage = document.createElement('div');
+    newMessage.classList.add('flex', response ? 'justify-start' : 'justify-end');
+    newMessage.innerHTML = `
+      <div class="${response ? 'bg-gray-400' : 'bg-primary-500'} text-white p-2 rounded-lg max-w-xs">
+        ${message}
+      </div>
+    `;
+    chat.appendChild(newMessage);
+    chat.scrollTop = chat.scrollHeight - chat.clientHeight;
+  }
+
+  let waiting = false;
+
+  function sendMessage() {
+    if (waiting) return;
+    const input = document.querySelector('input');
+    if (input.value.trim() === '') return;
+
+    waiting = true;
+    addMessage(input.value, false);
+
+    sendWebSocketMessage({
+      type: assistantRequestType,
+      data: {
+        content: input.value
+      }
+    });
+    
+    input.value = '';
+  }
+
+  window.addEventListener(`freya:${assistantResponseType}`, (event: CustomEvent) => {
+    addMessage(event.detail["content"], true);
+    waiting = false;
+  });
+
+  const send = document.getElementById('send-button');
+  send.addEventListener('click', () => {
+    sendMessage();
+  });
+
+  const input = document.querySelector('input');
+  input.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      sendMessage();
+    }
+  });
+
+</script>
