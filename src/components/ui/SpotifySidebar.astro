@@ -2,7 +2,13 @@
 import Icon from "./Icon.astro"
 ---
 
-<aside class="w-80 bg-white dark:bg-dark-200 border-r border-gray-200 dark:border-dark-300 order-last">
+<div class="hidden fixed bottom-4 right-4">
+    <button id="music-open-button" class="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center">
+        <Icon name="music_note" class="w-8 h-6 text-black cursor-pointer" />
+    </button>
+</div>
+
+<aside id="sidebar" class="hidden w-80 bg-white dark:bg-dark-200 border-r border-gray-200 dark:border-dark-300 order-last">
     <div id="auth-page" class="flex justify-center items-center h-full">
         <button id="auth-button" class="bg-primary-500 text-white font-bold py-2 px-4 rounded">
             Authenticate Spotify
@@ -10,8 +16,8 @@ import Icon from "./Icon.astro"
     </div>
     <div id="spotify-page" class="flex flex-col items-center p-4 hidden">
         <img src="https://placehold.co/64" alt="Image description" class="w-64 h-64 object-cover rounded-lg mb-4">
-        <h2 class="text-xl font-semibold mb-2">Main Text</h2>
-        <p class="text-sm text-gray-400">Smaller Text</p>
+        <h2 class="text-xl font-semibold mb-2">Song Name</h2>
+        <p class="text-sm text-gray-400">Artist Name</p>
         <div class="flex space-x-4 mt-4">
 
             <button id="previous">
@@ -43,31 +49,265 @@ import Icon from "./Icon.astro"
 
             <input id="volume-slider" type="range" min="0" max="100" value="50" class="w-full">
         </div>
+        <button id="fullscreen-button" class="flex items-center space-x-2 mt-4">
+            <Icon name="fullscreen" class="w-6 h-6 text-gray-500 cursor-pointer" />
+            <span class="text-gray-500">Fullscreen</span>
+        </button>
+        <button id="min-button" class="flex items-center space-x-2 mt-6">
+            <Icon name="close_fullscreen" class="w-6 h-6 text-gray-500 cursor-pointer" />
+            <span class="text-gray-500">Minimize</span>
+        </button>
     </div>
 </aside>
 
+<div id="fullscreen-background" class="hidden fixed inset-0 z-40 w-screen h-screen scale-125">
+    <img id="bg-tilt" src="https://placehold.co/128" alt="Background Image" class="w-full h-full object-cover blur-lg">
+</div>
+<div id="fullscreen" class="hidden fixed inset-0 flex justify-center items-center z-50">
+    <div class="flex flex-col items-center w-full h-full p-4">
+        <div id="spotify-page" class="flex flex-col items-center w-1/2 mt-[20vh]">
+            <img id="tilt-image" src="https://placehold.co/128" alt="Image description" class="w-96 h-96 object-cover rounded-lg mb-4">
+            <h2 class="text-2xl font-semibold mb-2 text-white">Song Name</h2>
+            <p class="text-lg text-white">Artist Name</p>
+        </div>
+        <div id="progress-bar-container" class="w-full bg-gray-700 h-4 mt-[15rem] mb-[-1px] rounded-t-md relative z-10">
+            <div id="progress-bar" class="h-full bg-primary-500 rounded-t-lg" style="width: 50%;"></div>
+        </div>
+        <div class="flex justify-between w-full mt-auto bg-gray-800 p-4 mb-[-1rem]">
+            <div class="flex space-x-4">
+                <button id="fs-previous">
+                    <Icon name="skip_previous" class="w-6 h-6 text-white cursor-pointer" />
+                </button>
+                <button id="fs-pause">
+                    <Icon name="pause" class="w-6 h-6 text-white cursor-pointer" />
+                </button>
+                <button id="fs-play" class="hidden">
+                    <Icon name="play_arrow" class="w-6 h-6 text-white cursor-pointer" />
+                </button>
+                <button id="fs-next">
+                    <Icon name="skip_next" class="w-6 h-6 text-white cursor-pointer" />
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="fs-mute-button" class="w-6 h-6 text-white cursor-pointer">
+                    <Icon name="volume_up" class="w-6 h-6" />
+                </button>
+                <button id="fs-unmute-button" class="w-6 h-6 text-white cursor-pointer hidden">
+                    <Icon name="volume_off" class="w-6 h-6" />
+                </button>
+                <input id="fs-volume-slider" type="range" min="0" max="100" value="50" class="w-full">
+            </div>
+        </div>
+        <button id="exit-fullscreen-button" class="absolute top-6 left-12 flex items-center space-x-2 mt-4">
+            <Icon name="fullscreen_exit" class="w-6 h-6 text-white cursor-pointer" />
+            <span class="text-white">Exit Fullscreen</span>
+        </button>
+    </div>
+</div>
+
 <script>
     import { sendWebSocketMessage } from "../../utils/websocket";
+
+    const tiltImage = document.getElementById('tilt-image');
+    const bgTilt = document.getElementById('bg-tilt');
+    tiltImage.addEventListener('mousemove', (e) => {
+        const rect = tiltImage.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const deltaX = (x - centerX) / centerX;
+        const deltaY = (y - centerY) / centerY;
+        const rotateX = deltaY * 10;
+        const rotateY = deltaX * -10;
+        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+        const moveX = deltaX * 10;
+        const moveY = deltaY * 10;
+        bgTilt.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    });
+
+    tiltImage.addEventListener('mouseleave', () => {
+        tiltImage.style.transition = 'transform 0.5s ease';
+        bgTilt.style.transition = 'transform 0.5s ease';
+        tiltImage.style.transform = 'rotateX(0) rotateY(0)';
+        bgTilt.style.transform = 'translate(0px, 0px)';
+        setTimeout(() => {
+            tiltImage.style.transition = '';
+            bgTilt.style.transition = '';
+        }, 500);
+    });
+
+    const playButton = document.getElementById('play');
+    const fsPlayButton = document.getElementById('fs-play');
+    const pauseButton = document.getElementById('pause');
+    const fsPauseButton = document.getElementById('fs-pause');
+    const previousButton = document.getElementById('previous');
+    const fsPreviousButton = document.getElementById('fs-previous');
+    const nextButton = document.getElementById('next');
+    const fsNextButton = document.getElementById('fs-next');
+    const muteButton = document.getElementById('mute-button');
+    const fsMuteButton = document.getElementById('fs-mute-button');
+    const unmuteButton = document.getElementById('unmute-button');
+    const fsUnmuteButton = document.getElementById('fs-unmute-button');
+    const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+    const fsVolumeSlider = document.getElementById('fs-volume-slider') as HTMLInputElement;
+    const fullscreenButton = document.getElementById('fullscreen-button');
+    const exitFullscreenButton = document.getElementById('exit-fullscreen-button');
+    const progressBar = document.getElementById('progress-bar');
+    const minButton = document.getElementById('min-button');
+    const musicOpenButton = document.getElementById('music-open-button');
+
+    function hideSpotify() {
+        document.getElementById('sidebar').classList.add('hidden');
+        document.getElementById('fullscreen').classList.add('hidden');
+        document.getElementById('fullscreen-background').classList.add('hidden');
+        let newCookie = {
+            spotifyAuthenticated: 'true',
+            minimized: 'true',
+            current_song: {
+                song_name: null,
+                artists: null,
+                cover_image: null,
+                track_length: null,
+                track_progress: null
+            }
+        } 
+        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+    }
+
+    function showSpotify() {
+        const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
+        if (spotifyCookie) {
+            const { spotifyAuthenticated } = JSON.parse(spotifyCookie.split('=')[1]);
+            if (spotifyAuthenticated === 'true') {
+                const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
+                document.getElementById('auth-page').classList.add('hidden');
+                document.getElementById('spotify-page').classList.remove('hidden');
+                (document.querySelectorAll('#spotify-page img') as NodeListOf<HTMLImageElement>).forEach(img => {
+                    img.src = cover_image;
+                    img.alt = song_name;
+                });
+                document.querySelectorAll('#spotify-page h2').forEach(h2 => h2.textContent = song_name);
+                document.querySelectorAll('#spotify-page p').forEach(p => p.textContent = artists);
+                
+                const fullscreenBackgroundImg = document.querySelector('#fullscreen-background img') as HTMLImageElement;
+                fullscreenBackgroundImg.src = cover_image;
+                fullscreenBackgroundImg.alt = song_name;
+            }
+        }
+        document.getElementById('sidebar').classList.remove('hidden');
+        playButton.classList.add('hidden');
+        pauseButton.classList.remove('hidden');
+    }
+
+    window.addEventListener('load', () => {
+        progressBar.style.width = '0%';
+        const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
+        if (spotifyCookie) {
+            const { spotifyAuthenticated } = JSON.parse(spotifyCookie.split('=')[1]);
+            if (spotifyAuthenticated === 'false') {
+                showSpotify();
+                return;
+            }
+            const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
+            if (!song_name || !artists || !cover_image) {
+                hideSpotify();
+                return;
+            }
+            showSpotify();
+        } else {
+            try {
+                sendWebSocketMessage({ type: 'spotify_auth' });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    });
+
+    let progressInterval;
+    let progressMs = 0;
+
+    function updateProgressBar(oldSong, newSong) {
+        if (oldSong && oldSong.song_name == newSong.song_name) {
+            if (newSong.track_progress > progressMs) {
+                const progressPercentage = (newSong.track_progress / newSong.track_length) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
+            } else {
+                return;
+            }
+        }
+
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+
+        if (newSong.track_length) {
+            const trackLength = newSong.track_length;
+            const startTime = Date.now() - newSong.track_progress;
+
+            progressInterval = setInterval(() => {
+                const elapsedTime = Date.now() - startTime;
+                const progressPercentage = (elapsedTime / trackLength) * 100;
+
+                progressBar.style.transition = 'width 1s linear';
+                progressBar.style.width = `${progressPercentage}%`;
+                progressMs += 1000;
+
+                if (elapsedTime >= trackLength) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    progressMs = 0;
+                    sendWebSocketMessage({ type: 'spotify_request_update' });
+                }
+            }, 1000);
+        }
+    }
 
     const authButton = document.getElementById('auth-button');
     authButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_auth' });
         document.getElementById('auth-page').classList.add('hidden');
         document.getElementById('spotify-page').classList.remove('hidden');
+        let newCookie = {
+            spotifyAuthenticated: 'true',
+            minimized: 'false',
+            current_song: {
+                song_name: null,
+                artists: null,
+                cover_image: null,
+                track_length: null,
+                track_progress: null
+            }
+        } 
+        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+        sendWebSocketMessage({ type: 'spotify_request_update' });
     });
 
-    const playButton = document.getElementById('play');
-    const pauseButton = document.getElementById('pause');
-    const previousButton = document.getElementById('previous');
-    const nextButton = document.getElementById('next');
-    const muteButton = document.getElementById('mute-button');
-    const unmuteButton = document.getElementById('unmute-button');
-    const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
+    minButton.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.add('transition-transform', 'duration-500', 'transform', 'translate-x-full');
+        setTimeout(() => {
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('sidebar').classList.remove('transition-transform', 'duration-500', 'transform', 'translate-x-full');
+        }, 500);
+        musicOpenButton.classList.remove('hidden');
+    });
+
+    musicOpenButton.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('hidden');
+        musicOpenButton.classList.add('hidden');
+    });
 
     playButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_play' });
         playButton.classList.add('hidden');
         pauseButton.classList.remove('hidden');
+    });
+
+    fsPlayButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_play' });
+        fsPlayButton.classList.add('hidden');
+        fsPauseButton.classList.remove('hidden');
     });
 
     pauseButton.addEventListener('click', () => {
@@ -76,11 +316,25 @@ import Icon from "./Icon.astro"
         playButton.classList.remove('hidden');
     });
 
+    fsPauseButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_pause' });
+        fsPauseButton.classList.add('hidden');
+        fsPlayButton.classList.remove('hidden');
+    });
+
     previousButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_previous' });
     });
 
+    fsPreviousButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_previous' });
+    });
+
     nextButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_next' });
+    });
+
+    fsNextButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_next' });
     });
 
@@ -93,12 +347,27 @@ import Icon from "./Icon.astro"
         unmuteButton.classList.remove('hidden');
     });
 
+    fsMuteButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_mute' });
+        fsVolumeSlider.value = '0';
+        fsMuteButton.classList.add('hidden');
+        fsUnmuteButton.classList.remove('hidden');
+    });
+
     unmuteButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_unmute' });
         volumeSlider.value = last_volume;
         muteButton.classList.remove('hidden');
         unmuteButton.classList.add('hidden');
     });
+
+    fsUnmuteButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_unmute' });
+        fsVolumeSlider.value = last_volume;
+        fsMuteButton.classList.remove('hidden');
+        fsUnmuteButton.classList.add('hidden');
+    });
+
 
     let volumeTimeout;
     volumeSlider.addEventListener('input', () => {
@@ -109,14 +378,99 @@ import Icon from "./Icon.astro"
         }, 300);
     });
 
+    fsVolumeSlider.addEventListener('input', () => {
+        clearTimeout(volumeTimeout);
+        volumeTimeout = setTimeout(() => {
+            sendWebSocketMessage({ type: 'spotify_volume', data: { volume: parseInt(fsVolumeSlider.value, 10) } });
+            last_volume = fsVolumeSlider.value;
+        }, 300);
+    });
+
+    fullscreenButton.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_request_update' });
+        document.getElementById('sidebar').classList.add('hidden');
+        document.getElementById('fullscreen').classList.remove('hidden');
+        document.getElementById('fullscreen-background').classList.remove('hidden');
+    });
+
+    exitFullscreenButton.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('hidden');
+        document.getElementById('fullscreen').classList.add('hidden');
+        document.getElementById('fullscreen-background').classList.add('hidden');
+    });
+
+    let cookieCount = 0;
+    function incrementClearCookie() {
+        if (cookieCount >= 10) {
+            const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
+            if (spotifyCookie) {
+                const { spotifyAuthenticated, minimized } = JSON.parse(spotifyCookie.split('=')[1]);
+                let newCookie = {
+                    spotifyAuthenticated: spotifyAuthenticated,
+                    minimized: minimized,
+                    current_song: {
+                        song_name: null,
+                        artists: null,
+                        cover_image: null,
+                        track_length: null,
+                        track_progress: null
+                    }
+                } 
+                document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+            }
+            musicOpenButton.classList.add('hidden');
+        } else {
+            cookieCount++;
+        }
+    }
+
+    let last_song = null
     window.addEventListener('freya:spotify_update', (event) => {
-        const { song_name, artists, cover_image } = (event as CustomEvent).detail;
+        const { song_name, artists, cover_image, track_length, track_progress } = (event as CustomEvent).detail;
         if (!song_name || !artists || !cover_image) {
+            const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
+            if (spotifyCookie) {
+                const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
+                if (!song_name || !artists || !cover_image) {
+                    hideSpotify();
+                    return;
+                }
+            }
+            incrementClearCookie();
             return;
         }
-        (document.querySelector('#spotify-page img') as HTMLImageElement).src = cover_image;
-        (document.querySelector('#spotify-page img') as HTMLImageElement).alt = song_name;
-        document.querySelector('#spotify-page h2').textContent = song_name;
-        document.querySelector('#spotify-page p').textContent = artists;
+        cookieCount = 0;
+        // TODO: minimization stuff
+        showSpotify();
+        (document.querySelectorAll('#spotify-page img') as NodeListOf<HTMLImageElement>).forEach(img => {
+            img.src = cover_image;
+            img.alt = song_name;
+        });
+        document.querySelectorAll('#spotify-page h2').forEach(h2 => h2.textContent = song_name);
+        document.querySelectorAll('#spotify-page p').forEach(p => p.textContent = artists);
+        
+        const fullscreenBackgroundImg = document.querySelector('#fullscreen-background img') as HTMLImageElement;
+        fullscreenBackgroundImg.src = cover_image;
+        fullscreenBackgroundImg.alt = song_name;
+        
+        if (last_song) {
+            updateProgressBar(last_song, { song_name, artists, cover_image, track_length, track_progress });
+        } else {
+            updateProgressBar(null, { song_name, artists, cover_image, track_length, track_progress });
+        }
+        last_song = { song_name, artists, cover_image, track_length, track_progress };
+
+        let newCookie = {
+            spotifyAuthenticated: 'true',
+            minimized: 'false',
+            current_song: {
+                song_name,
+                artists,
+                cover_image,
+                track_length,
+                track_progress
+            }
+        }
+        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
     });
 </script>

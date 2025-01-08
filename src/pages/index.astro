@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Card from '../components/Card.astro';
+import Icon from '../components/ui/Icon.astro';
 ---
 
 <DashboardLayout title="Dashboard">
@@ -12,7 +13,7 @@ import Card from '../components/Card.astro';
     
     <Card title="System Health">
       <div class="flex items-center">
-        <span class="material-icons-outlined text-green-500 mr-2">check_circle</span>
+        <Icon name="check_circle" class="text-green-500 mr-2" />
         <span>All Systems Operational</span>
       </div>
     </Card>
@@ -20,11 +21,11 @@ import Card from '../components/Card.astro';
     <Card title="Recent Activity">
       <ul class="space-y-4">
         <li class="flex items-center text-sm">
-          <span class="material-icons-outlined text-gray-400 mr-2">lightbulb</span>
+          <Icon name="lightbulb" class="text-gray-400 mr-2" />
           <span>Living Room Lights turned on</span>
         </li>
         <li class="flex items-center text-sm">
-          <span class="material-icons-outlined text-gray-400 mr-2">thermostat</span>
+          <Icon name="thermostat" class="text-gray-400 mr-2" />
           <span>Temperature adjusted to 72°F</span>
         </li>
       </ul>

@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Card from '../components/Card.astro';
+import Icon from '../components/ui/Icon.astro';
 ---
 
 <DashboardLayout title="Automations">
@@ -9,11 +10,11 @@ import Card from '../components/Card.astro';
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center">
-            <span class="material-icons-outlined text-primary-500 mr-2">schedule</span>
+            <Icon name="schedule" class="text-primary-500 mr-2" />
             <span>7:00 AM</span>
           </div>
           <button class="text-primary-600 dark:text-primary-500">
-            <span class="material-icons-outlined">edit</span>
+            <Icon name="edit" class="text-primary-500" />
           </button>
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">

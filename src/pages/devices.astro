@@ -1,6 +1,7 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Card from '../components/Card.astro';
+import Icon from '../components/ui/Icon.astro';
 ---
 
 <DashboardLayout title="Devices">
@@ -9,17 +10,17 @@ import Card from '../components/Card.astro';
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center">
-            <span class="material-icons-outlined text-primary-500 mr-2">lightbulb</span>
+            <Icon name="lightbulb" class="text-primary-500 mr-2" />
             <span>Main Light</span>
           </div>
           <button class="text-primary-600 dark:text-primary-500">
-            <span class="material-icons-outlined">power_settings_new</span>
+            <Icon name="power_settings_new" class="text-primary-500" />
           </button>
         </div>
         
         <div class="flex items-center justify-between">
           <div class="flex items-center">
-            <span class="material-icons-outlined text-primary-500 mr-2">thermostat</span>
+            <Icon name="thermostat" class="text-primary-500 mr-2" />
             <span>Thermostat</span>
           </div>
           <span>72°F</span>

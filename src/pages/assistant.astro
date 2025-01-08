@@ -12,7 +12,7 @@ import Icon from '../components/ui/Icon.astro';
         <div id="chat" class="space-y-4 max-h-[70vh] h-[70vh] overflow-scroll no-scrollbar"></div>
 
         <div class="flex items-center border rounded-lg p-2">
-            <input type="text" placeholder="Type your message..." class="flex-grow p-2 border-none outline-none" />
+            <input id="assistant-input" type="text" placeholder="Type your message..." class="flex-grow p-2 border-none outline-none" />
             <button id="send-button" class="mr-4 mt-1 cursor-pointer">
                 <Icon name="send" class="text-primary-500" />
             </button>
@@ -57,7 +57,7 @@ import Icon from '../components/ui/Icon.astro';
 
   function sendMessage() {
     if (waiting) return;
-    const input = document.querySelector('input');
+    const input = document.getElementById('assistant-input') as HTMLInputElement;
     if (input.value.trim() === '') return;
 
     waiting = true;
@@ -83,7 +83,7 @@ import Icon from '../components/ui/Icon.astro';
     sendMessage();
   });
 
-  const input = document.querySelector('input');
+  const input = document.getElementById('assistant-input');
   input.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
       sendMessage();
