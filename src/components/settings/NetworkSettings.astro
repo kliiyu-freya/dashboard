@@ -1,0 +1,56 @@
+---
+import Card from '../Card.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<Card title="Network Settings">
+    <div class="space-y-4">
+      <div class="flex items-center justify-between">
+        <span>Core IP Address</span>
+        <input type="text" id="core-ip" class="w-1/2 p-2 border rounded-md" placeholder="localhost" value=""/>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Core Port</span>
+        <input type="text" id="core-port" class="w-1/2 p-2 border rounded-md" placeholder="6672" value=""/>
+      </div>
+      <div class="flex items-center justify-between">
+        <button id="update-connection-address-button" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+          Update
+        </button>
+      </div>
+    </div>
+</Card>
+
+<script>
+    document.getElementById('update-connection-address-button').addEventListener('click', function() {
+        const coreIp = (document.getElementById('core-ip') as HTMLInputElement).value;
+        const corePort = (document.getElementById('core-port') as HTMLInputElement).value;
+        if (coreIp === '' || corePort === '') {
+            return;
+        }
+
+        console.log(`Updating connection address to ${coreIp}:${corePort}`);
+        const newDict = {
+            coreIp: coreIp,
+            corePort: corePort
+        };
+        localStorage.setItem('connectionSettings', JSON.stringify(newDict));
+        location.reload();
+    });
+
+    window.addEventListener('DOMContentLoaded', (event) => {
+      const connectionSettings = localStorage.getItem('connectionSettings');
+      if (!connectionSettings) {
+        return;
+      }
+
+      const { coreIp, corePort } = JSON.parse(connectionSettings);
+      if (coreIp) {
+        (document.getElementById('core-ip') as HTMLInputElement).value = coreIp;
+      }
+
+      if (corePort) {
+        (document.getElementById('core-port') as HTMLInputElement).value = corePort;
+      }
+    });
+</script>

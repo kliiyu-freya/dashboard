@@ -2,8 +2,8 @@
 import Icon from "./Icon.astro"
 ---
 
-<div class="hidden fixed bottom-4 right-4">
-    <button id="music-open-button" class="w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center">
+<div class="fixed bottom-4 right-4">
+    <button id="music-open-button" class="hidden w-16 h-16 bg-white rounded-full shadow-lg flex items-center justify-center">
         <Icon name="music_note" class="w-8 h-6 text-black cursor-pointer" />
     </button>
 </div>
@@ -63,17 +63,24 @@ import Icon from "./Icon.astro"
 <div id="fullscreen-background" class="hidden fixed inset-0 z-40 w-screen h-screen scale-125">
     <img id="bg-tilt" src="https://placehold.co/128" alt="Background Image" class="w-full h-full object-cover blur-lg">
 </div>
+<div id="invisible-controls" class="hidden absolute grid grid-cols-3 h-[60vh] w-full gap-4 px-4 z-[100] top-1/2 -translate-y-1/2">
+    <button id="invisible-last" class="flex items-center justify-center cursor-pointer relative"></button>
+    <button id="invisible-play" class="flex items-center justify-center cursor-pointer relative"></button>
+    <button id="invisible-next" class="flex items-center justify-center cursor-pointer relative"></button>
+</div>
 <div id="fullscreen" class="hidden fixed inset-0 flex justify-center items-center z-50">
     <div class="flex flex-col items-center w-full h-full p-4">
-        <div id="spotify-page" class="flex flex-col items-center w-1/2 mt-[20vh]">
-            <img id="tilt-image" src="https://placehold.co/128" alt="Image description" class="w-96 h-96 object-cover rounded-lg mb-4">
+        <div id="spotify-page" class="flex flex-col items-center w-1/2 mb-auto top-1/2 translate-y-1/2 md:translate-y-1/4">
+            <img id="cover-image" src="https://placehold.co/128" alt="Image description" class="w-96 h-96 object-cover rounded-lg mb-4">
             <h2 class="text-2xl font-semibold mb-2 text-white">Song Name</h2>
             <p class="text-lg text-white">Artist Name</p>
         </div>
-        <div id="progress-bar-container" class="w-full bg-gray-700 h-4 mt-[15rem] mb-[-1px] rounded-t-md relative z-10">
+        <!-- Progress Bar -->
+        <div id="progress-bar-container" class="w-full bg-gray-700 h-2 mb-[-1px] rounded-t-md relative z-10">
             <div id="progress-bar" class="h-full bg-primary-500 rounded-t-lg" style="width: 50%;"></div>
         </div>
-        <div class="flex justify-between w-full mt-auto bg-gray-800 p-4 mb-[-1rem]">
+        <!-- Controls -->
+        <div class="flex justify-between w-full bg-gray-800 p-4 mb-[-1.5rem]">
             <div class="flex space-x-4">
                 <button id="fs-previous">
                     <Icon name="skip_previous" class="w-6 h-6 text-white cursor-pointer" />
@@ -108,35 +115,21 @@ import Icon from "./Icon.astro"
 <script>
     import { sendWebSocketMessage } from "../../utils/websocket";
 
-    const tiltImage = document.getElementById('tilt-image');
     const bgTilt = document.getElementById('bg-tilt');
-    tiltImage.addEventListener('mousemove', (e) => {
-        const rect = tiltImage.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const deltaX = (x - centerX) / centerX;
-        const deltaY = (y - centerY) / centerY;
-        const rotateX = deltaY * 10;
-        const rotateY = deltaX * -10;
-        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-        const moveX = deltaX * 10;
-        const moveY = deltaY * 10;
-        bgTilt.style.transform = `translate(${moveX}px, ${moveY}px)`;
-    });
+    function animateTilt() {
+        let angle = 0;
+        function updateTilt() {
+            const moveX = Math.sin(angle) * 5;
+            const moveY = Math.cos(angle) * 5;
+            bgTilt.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            angle += 0.01;
+            requestAnimationFrame(updateTilt);
+        }
+        updateTilt();
+    }
+    window.addEventListener('load', animateTilt);
 
-    tiltImage.addEventListener('mouseleave', () => {
-        tiltImage.style.transition = 'transform 0.5s ease';
-        bgTilt.style.transition = 'transform 0.5s ease';
-        tiltImage.style.transform = 'rotateX(0) rotateY(0)';
-        bgTilt.style.transform = 'translate(0px, 0px)';
-        setTimeout(() => {
-            tiltImage.style.transition = '';
-            bgTilt.style.transition = '';
-        }, 500);
-    });
-
+    const coverImage = document.getElementById('cover-image') as HTMLImageElement;
     const playButton = document.getElementById('play');
     const fsPlayButton = document.getElementById('fs-play');
     const pauseButton = document.getElementById('pause');
@@ -156,60 +149,106 @@ import Icon from "./Icon.astro"
     const progressBar = document.getElementById('progress-bar');
     const minButton = document.getElementById('min-button');
     const musicOpenButton = document.getElementById('music-open-button');
+    const sidebar = document.getElementById('sidebar');
+    const invisibleLast = document.getElementById('invisible-last');
+    const invisiblePlay = document.getElementById('invisible-play');
+    const invisibleNext = document.getElementById('invisible-next');
+
+    let paused = false;
 
     function hideSpotify() {
         document.getElementById('sidebar').classList.add('hidden');
         document.getElementById('fullscreen').classList.add('hidden');
         document.getElementById('fullscreen-background').classList.add('hidden');
-        let newCookie = {
-            spotifyAuthenticated: 'true',
-            minimized: 'true',
-            current_song: {
-                song_name: null,
-                artists: null,
-                cover_image: null,
-                track_length: null,
-                track_progress: null
-            }
-        } 
-        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+        document.getElementById('invisible-controls').classList.add('hidden');
+
+        const spotifyData = localStorage.getItem('spotify');
+        let newData
+        if (spotifyData) {
+            const { current_song } = JSON.parse(spotifyData);
+            newData = {
+                minimized: 'true',
+                current_song: current_song
+            } 
+        } else {
+            newData = {
+                minimized: 'true',
+                current_song: {
+                    song_name: null,
+                    artists: null,
+                    cover_image: null,
+                    track_length: null,
+                    track_progress: null
+                }
+            } 
+        }
+        localStorage.setItem('spotify', JSON.stringify(newData));
     }
 
-    function showSpotify() {
-        const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
-        if (spotifyCookie) {
-            const { spotifyAuthenticated } = JSON.parse(spotifyCookie.split('=')[1]);
-            if (spotifyAuthenticated === 'true') {
-                const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
-                document.getElementById('auth-page').classList.add('hidden');
-                document.getElementById('spotify-page').classList.remove('hidden');
-                (document.querySelectorAll('#spotify-page img') as NodeListOf<HTMLImageElement>).forEach(img => {
-                    img.src = cover_image;
-                    img.alt = song_name;
-                });
-                document.querySelectorAll('#spotify-page h2').forEach(h2 => h2.textContent = song_name);
-                document.querySelectorAll('#spotify-page p').forEach(p => p.textContent = artists);
-                
-                const fullscreenBackgroundImg = document.querySelector('#fullscreen-background img') as HTMLImageElement;
-                fullscreenBackgroundImg.src = cover_image;
-                fullscreenBackgroundImg.alt = song_name;
-            }
+    function updateSpotify(spotifyData) {
+        if (spotifyData) {
+            const { song_name, artists, cover_image } = JSON.parse(spotifyData).current_song;
+            document.getElementById('auth-page').classList.add('hidden');
+            document.getElementById('spotify-page').classList.remove('hidden');
+            (document.querySelectorAll('#spotify-page img') as NodeListOf<HTMLImageElement>).forEach(img => {
+                img.src = cover_image;
+                img.alt = song_name;
+            });
+            document.querySelectorAll('#spotify-page h2').forEach(h2 => h2.textContent = song_name);
+            document.querySelectorAll('#spotify-page p').forEach(p => p.textContent = artists);
+            
+            const fullscreenBackgroundImg = document.querySelector('#fullscreen-background img') as HTMLImageElement;
+            fullscreenBackgroundImg.src = cover_image;
+            fullscreenBackgroundImg.alt = song_name;
         }
-        document.getElementById('sidebar').classList.remove('hidden');
-        playButton.classList.add('hidden');
-        pauseButton.classList.remove('hidden');
+    }
+
+    function showSpotify(unhide: boolean = false) {
+        const spotifyData = localStorage.getItem('spotify');
+        if (spotifyData) {
+            const { minimized, current_song } = JSON.parse(spotifyData);
+            updateSpotify(spotifyData);
+            if (minimized == 'true' && unhide) {
+                const newData = {
+                    minimized: 'false',
+                    current_song: current_song
+                }
+                localStorage.setItem('spotify', JSON.stringify(newData));
+                sidebar.classList.remove('hidden');
+                musicOpenButton.classList.add('hidden');
+            } else if (minimized == 'false') {
+                sidebar.classList.remove('hidden');
+                musicOpenButton.classList.add('hidden');
+            } else {
+                musicOpenButton.classList.remove('hidden');
+            }
+            if (paused) {
+                playButton.classList.remove('hidden');
+                pauseButton.classList.add('hidden');
+            } else{
+                playButton.classList.add('hidden');
+                pauseButton.classList.remove('hidden');
+            }
+        } else {
+            const newData = {
+                minimized: 'false',
+                current_song: {
+                    song_name: null,
+                    artists: null,
+                    cover_image: null,
+                    track_length: null,
+                    track_progress: null
+                }
+            }
+            localStorage.setItem('spotify', JSON.stringify(newData));
+        }
     }
 
     window.addEventListener('load', () => {
         progressBar.style.width = '0%';
-        const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
-        if (spotifyCookie) {
-            const { spotifyAuthenticated } = JSON.parse(spotifyCookie.split('=')[1]);
-            if (spotifyAuthenticated === 'false') {
-                showSpotify();
-                return;
-            }
-            const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
+        const spotifyData = localStorage.getItem('spotify');
+        if (spotifyData) {
+            const { song_name, artists, cover_image } = JSON.parse(spotifyData).current_song;
             if (!song_name || !artists || !cover_image) {
                 hideSpotify();
                 return;
@@ -247,18 +286,20 @@ import Icon from "./Icon.astro"
             const startTime = Date.now() - newSong.track_progress;
 
             progressInterval = setInterval(() => {
-                const elapsedTime = Date.now() - startTime;
-                const progressPercentage = (elapsedTime / trackLength) * 100;
+                if (!paused) {
+                    const elapsedTime = Date.now() - startTime;
+                    const progressPercentage = (elapsedTime / trackLength) * 100;
 
-                progressBar.style.transition = 'width 1s linear';
-                progressBar.style.width = `${progressPercentage}%`;
-                progressMs += 1000;
+                    progressBar.style.transition = 'width 1s linear';
+                    progressBar.style.width = `${progressPercentage}%`;
+                    progressMs += 1000;
 
-                if (elapsedTime >= trackLength) {
-                    clearInterval(progressInterval);
-                    progressInterval = null;
-                    progressMs = 0;
-                    sendWebSocketMessage({ type: 'spotify_request_update' });
+                    if (elapsedTime >= trackLength) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        progressMs = 0;
+                        sendWebSocketMessage({ type: 'spotify_request_update' });
+                    }
                 }
             }, 1000);
         }
@@ -269,8 +310,7 @@ import Icon from "./Icon.astro"
         sendWebSocketMessage({ type: 'spotify_auth' });
         document.getElementById('auth-page').classList.add('hidden');
         document.getElementById('spotify-page').classList.remove('hidden');
-        let newCookie = {
-            spotifyAuthenticated: 'true',
+        let newData = {
             minimized: 'false',
             current_song: {
                 song_name: null,
@@ -280,46 +320,83 @@ import Icon from "./Icon.astro"
                 track_progress: null
             }
         } 
-        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+        localStorage.setItem('spotify', JSON.stringify(newData));
         sendWebSocketMessage({ type: 'spotify_request_update' });
     });
 
     minButton.addEventListener('click', () => {
-        document.getElementById('sidebar').classList.add('transition-transform', 'duration-500', 'transform', 'translate-x-full');
-        setTimeout(() => {
-            document.getElementById('sidebar').classList.add('hidden');
-            document.getElementById('sidebar').classList.remove('transition-transform', 'duration-500', 'transform', 'translate-x-full');
-        }, 500);
         musicOpenButton.classList.remove('hidden');
+        hideSpotify();
     });
 
     musicOpenButton.addEventListener('click', () => {
-        document.getElementById('sidebar').classList.remove('hidden');
-        musicOpenButton.classList.add('hidden');
+        showSpotify(true);
     });
 
     playButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_play' });
         playButton.classList.add('hidden');
         pauseButton.classList.remove('hidden');
+        paused = false;
+        bgTilt.classList.add('blur-lg');
+        bgTilt.style.transition = 'filter 0.3s ease-in-out';
+        coverImage.classList.remove('blur-sm');
+        coverImage.style.transition = 'filter 0.3s ease-in-out';
     });
 
     fsPlayButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_play' });
         fsPlayButton.classList.add('hidden');
         fsPauseButton.classList.remove('hidden');
+        paused = false;
+        bgTilt.classList.add('blur-lg');
+        bgTilt.style.transition = 'filter 0.3s ease-in-out';
+        coverImage.classList.remove('blur-sm');
+        coverImage.style.transition = 'filter 0.3s ease-in-out';
+    });
+
+    invisiblePlay.addEventListener('click', () => {
+        if (paused) {
+            sendWebSocketMessage({ type: 'spotify_play' });
+            fsPlayButton.classList.add('hidden');
+            fsPauseButton.classList.remove('hidden');
+            paused = false;
+            bgTilt.classList.add('blur-lg');
+            bgTilt.style.transition = 'filter 0.3s ease-in-out';
+            coverImage.classList.remove('blur-sm');
+            coverImage.style.transition = 'filter 0.3s ease-in-out';
+        } else {
+            sendWebSocketMessage({ type: 'spotify_pause' });
+            fsPauseButton.classList.add('hidden');
+            fsPlayButton.classList.remove('hidden');
+            paused = true;
+            bgTilt.classList.remove('blur-lg');
+            bgTilt.style.transition = 'filter 0.3s ease-in-out';
+            coverImage.classList.add('blur-sm');
+            coverImage.style.transition = 'filter 0.3s ease-in-out';
+        }
     });
 
     pauseButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_pause' });
         pauseButton.classList.add('hidden');
         playButton.classList.remove('hidden');
+        paused = true;
+        bgTilt.classList.remove('blur-lg');
+        bgTilt.style.transition = 'filter 0.3s ease-in-out';
+        coverImage.classList.add('blur-sm');
+        coverImage.style.transition = 'filter 0.3s ease-in-out';
     });
 
     fsPauseButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_pause' });
         fsPauseButton.classList.add('hidden');
         fsPlayButton.classList.remove('hidden');
+        paused = true;
+        bgTilt.classList.remove('blur-lg');
+        bgTilt.style.transition = 'filter 0.3s ease-in-out';
+        coverImage.classList.add('blur-sm');
+        coverImage.style.transition = 'filter 0.3s ease-in-out';
     });
 
     previousButton.addEventListener('click', () => {
@@ -330,12 +407,24 @@ import Icon from "./Icon.astro"
         sendWebSocketMessage({ type: 'spotify_previous' });
     });
 
+    invisibleLast.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_previous' });
+        coverImage.classList.add('scale-125');
+        coverImage.style.transition = 'transform 0.1s ease-in-out';
+    });
+
     nextButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_next' });
     });
 
     fsNextButton.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_next' });
+    });
+
+    invisibleNext.addEventListener('click', () => {
+        sendWebSocketMessage({ type: 'spotify_next' });
+        coverImage.classList.add('scale-125');
+        coverImage.style.transition = 'transform 0.1s ease-in-out';
     });
 
     let last_volume = '100';
@@ -391,22 +480,23 @@ import Icon from "./Icon.astro"
         document.getElementById('sidebar').classList.add('hidden');
         document.getElementById('fullscreen').classList.remove('hidden');
         document.getElementById('fullscreen-background').classList.remove('hidden');
+        document.getElementById('invisible-controls').classList.remove('hidden');
     });
 
     exitFullscreenButton.addEventListener('click', () => {
         document.getElementById('sidebar').classList.remove('hidden');
         document.getElementById('fullscreen').classList.add('hidden');
         document.getElementById('fullscreen-background').classList.add('hidden');
+        document.getElementById('invisible-controls').classList.add('hidden');
     });
 
     let cookieCount = 0;
     function incrementClearCookie() {
         if (cookieCount >= 10) {
-            const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
-            if (spotifyCookie) {
-                const { spotifyAuthenticated, minimized } = JSON.parse(spotifyCookie.split('=')[1]);
-                let newCookie = {
-                    spotifyAuthenticated: spotifyAuthenticated,
+            const spotifyData = localStorage.getItem('spotify');
+            if (spotifyData) {
+                const { minimized } = JSON.parse(spotifyData);
+                let newData = {
                     minimized: minimized,
                     current_song: {
                         song_name: null,
@@ -416,7 +506,7 @@ import Icon from "./Icon.astro"
                         track_progress: null
                     }
                 } 
-                document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+                localStorage.setItem('spotify', JSON.stringify(newData));
             }
             musicOpenButton.classList.add('hidden');
         } else {
@@ -428,9 +518,9 @@ import Icon from "./Icon.astro"
     window.addEventListener('freya:spotify_update', (event) => {
         const { song_name, artists, cover_image, track_length, track_progress } = (event as CustomEvent).detail;
         if (!song_name || !artists || !cover_image) {
-            const spotifyCookie = document.cookie.split('; ').find(row => row.startsWith('spotify='));
-            if (spotifyCookie) {
-                const { song_name, artists, cover_image } = JSON.parse(spotifyCookie.split('=')[1]).current_song;
+            const spotifyData = localStorage.getItem('spotify');
+            if (spotifyData) {
+                const { song_name, artists, cover_image } = JSON.parse(spotifyData).current_song;
                 if (!song_name || !artists || !cover_image) {
                     hideSpotify();
                     return;
@@ -440,7 +530,6 @@ import Icon from "./Icon.astro"
             return;
         }
         cookieCount = 0;
-        // TODO: minimization stuff
         showSpotify();
         (document.querySelectorAll('#spotify-page img') as NodeListOf<HTMLImageElement>).forEach(img => {
             img.src = cover_image;
@@ -452,7 +541,7 @@ import Icon from "./Icon.astro"
         const fullscreenBackgroundImg = document.querySelector('#fullscreen-background img') as HTMLImageElement;
         fullscreenBackgroundImg.src = cover_image;
         fullscreenBackgroundImg.alt = song_name;
-        
+
         if (last_song) {
             updateProgressBar(last_song, { song_name, artists, cover_image, track_length, track_progress });
         } else {
@@ -460,17 +549,32 @@ import Icon from "./Icon.astro"
         }
         last_song = { song_name, artists, cover_image, track_length, track_progress };
 
-        let newCookie = {
-            spotifyAuthenticated: 'true',
-            minimized: 'false',
-            current_song: {
-                song_name,
-                artists,
-                cover_image,
-                track_length,
-                track_progress
+        let newData
+        const spotifyData = localStorage.getItem('spotify');
+        if (spotifyData) {
+            const { minimized } = JSON.parse(spotifyData);
+            newData = {
+                minimized: minimized,
+                current_song: {
+                    song_name,
+                    artists,
+                    cover_image,
+                    track_length,
+                    track_progress
+                }
+            }
+        } else {
+            newData = {
+                minimized: 'false',
+                current_song: {
+                    song_name,
+                    artists,
+                    cover_image,
+                    track_length,
+                    track_progress
+                }
             }
         }
-        document.cookie = `spotify=${JSON.stringify(newCookie)}; path=/; max-age=${30 * 24 * 60 * 60}`;
+        localStorage.setItem('spotify', JSON.stringify(newData));
     });
 </script>

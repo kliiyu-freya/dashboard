@@ -1,0 +1,42 @@
+---
+import Card from '../Card.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<Card title="Spotify Settings">
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <span>Authentication</span>
+            <button id="spotify-auth-button" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+                Open Authentication Link
+            </button>
+        </div>
+        <div class="flex items-center justify-between">
+            <span>Callback Link</span>
+            <input type="text" id="spotify-callback-link" class="w-1/2 p-2 border rounded-md" placeholder="https://example.org/?code=NgCXRK...MzYjw" value=""/>
+        </div>
+        <div id="update-box" class="flex items-center justify-between">
+            <button id="spotify-update-button" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+                Update
+            </button>
+        </div>
+    </div>
+</Card>
+
+<script>
+    import { sendWebSocketMessage } from "../../utils/websocket";
+
+    document.getElementById('spotify-auth-button').addEventListener('click', async () => {
+        sendWebSocketMessage({ type: 'spotify_auth_url' });
+    });
+
+    window.addEventListener('freya:spotify_auth_url_response', (event) => {
+        const { auth_url } = (event as CustomEvent).detail;
+        window.open(auth_url, '_blank');
+    });
+
+    document.getElementById('spotify-update-button').addEventListener('click', async () => {
+        const callbackLink = (document.getElementById('spotify-callback-link') as HTMLInputElement).value;
+        sendWebSocketMessage({ type: 'spotify_auth', data: { callbackLink } });
+    });
+</script>

@@ -1,6 +1,6 @@
 ---
 export interface ToggleProps {
-    id?: string;
+    id: string;
     checked?: boolean;
 }
 
@@ -24,6 +24,15 @@ const { id, checked = false } = Astro.props;
 
     toggleElement.addEventListener('change', () => {
         isChecked = toggleElement.checked;
-        document.dispatchEvent(new CustomEvent('change', { detail: { checked: isChecked } }));
+        window.dispatchEvent(new CustomEvent('change', { detail: { checked: isChecked } }));
     });
+
+    window.addEventListener('toggleButton', (event) => {
+        const { id, checked } = (event as CustomEvent).detail as { id: string; checked: boolean };
+        if (id !== toggleElement.parentElement.id) {
+            return;
+        }
+        toggleElement.checked = checked;
+    });
+    
 </script>

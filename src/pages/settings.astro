@@ -3,29 +3,15 @@ import DashboardLayout from '../layouts/DashboardLayout.astro';
 import Card from '../components/Card.astro';
 import Toggle from '../components/ui/Toggle.astro';
 import Icon from '../components/ui/Icon.astro';
+
+import NetworkSettings from '../components/settings/NetworkSettings.astro';
+import SpotifySettings from '../components/settings/SpotifySettings.astro';
 ---
 
 <DashboardLayout title="Settings">
   <div class="space-y-6 max-w-2xl">
 
-    <Card title="Network Settings">
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <span>Core IP Address</span>
-          <input type="text" id="core-ip" class="w-1/2 p-2 border rounded-md" placeholder="localhost" value=""/>
-        </div>
-        <div class="flex items-center justify-between">
-          <span>Core Port</span>
-          <input type="text" id="core-port" class="w-1/2 p-2 border rounded-md" placeholder="6672" value=""/>
-        </div>
-        <div class="flex items-center justify-between">
-          <button id="update-connection-address-button" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
-            Update
-          </button>
-        </div>
-      </div>
-    </Card>
-    
+    <NetworkSettings />
     
     <Card title="General Settings">
       <div class="space-y-4">
@@ -42,67 +28,48 @@ import Icon from '../components/ui/Icon.astro';
       </div>
     </Card>
 
+    <SpotifySettings />
+
   </div>
 </DashboardLayout>
 
 <script>
-  function getSettingsCookie() {
-    const settingsCookie = document.cookie.split('; ').find(row => row.startsWith('settings='));
-    let settings = {};
-    if (settingsCookie) {
+  function getSettings() {
+    const settings = localStorage.getItem('settings');
+    let settingsDict = {};
+    if (settings) {
         try {
-            settings = JSON.parse(decodeURIComponent(settingsCookie.split('=')[1]));
+          settingsDict = JSON.parse(settings);
         } catch (error) {
-            console.error('Failed to parse settings cookie:', error);
+            console.error('Failed to parse settings:', error);
         }
     }
-    return settings;
+    return settingsDict;
   }
 
-  function updateSettingsCookie(settings: Record<string, any>) {
-    document.cookie = `settings=${encodeURIComponent(JSON.stringify(settings))}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
+  function updateSettings(settings: Record<string, any>) {
+    localStorage.setItem('settings', JSON.stringify(settings));
   }
   
   function handleNotificationToggle(newState: boolean) {
-    let settings = getSettingsCookie();
+    let settings = getSettings();
     settings["notifications"] = newState;
-    updateSettingsCookie(settings);
+    updateSettings(settings);
     console.log(`Notifications are now ${newState ? 'enabled' : 'disabled'}`);
   }
 
   const notificationsToggle = document.getElementById('notifications-toggle') as HTMLInputElement;
+  
+  window.addEventListener('DOMContentLoaded', (event) => {
+    const settings = getSettings();
+    if (settings.hasOwnProperty("notifications")) {
+      window.dispatchEvent(new CustomEvent('toggleButton', { 
+        detail: { id: 'notifications-toggle', checked: settings["notifications"] } 
+      }));
+    }
+  });
+
   notificationsToggle.addEventListener('change', (event) => {
     handleNotificationToggle((event.target as HTMLInputElement).checked);
-  });
-  
-
-  document.getElementById('update-connection-address-button').addEventListener('click', function() {
-    const coreIp = (document.getElementById('core-ip') as HTMLInputElement).value;
-    const corePort = (document.getElementById('core-port') as HTMLInputElement).value;
-    if (coreIp === '' || corePort === '') {
-      return;
-    }
-
-    console.log(`Updating connection address to ${coreIp}:${corePort}`);
-    const expires = new Date();
-    expires.setFullYear(expires.getFullYear() + 100);
-    document.cookie = `coreIp=${coreIp}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
-    document.cookie = `corePort=${corePort}; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`;
-    location.reload();
-  });
-
-  window.addEventListener('DOMContentLoaded', (event) => {
-    const coreIpCookie = document.cookie.split('; ').find(row => row.startsWith('coreIp='));
-    const corePortCookie = document.cookie.split('; ').find(row => row.startsWith('corePort='));
-
-    if (coreIpCookie) {
-      const coreIp = coreIpCookie.split('=')[1];
-      (document.getElementById('core-ip') as HTMLInputElement).value = coreIp;
-    }
-
-    if (corePortCookie) {
-      const corePort = corePortCookie.split('=')[1];
-      (document.getElementById('core-port') as HTMLInputElement).value = corePort;
-    }
   });
 </script>
