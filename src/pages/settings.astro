@@ -1,15 +1,25 @@
 ---
 import DashboardLayout from '../layouts/DashboardLayout.astro';
-import Card from '../components/Card.astro';
+import Card from '../components/ui/Card.astro';
 import Toggle from '../components/ui/Toggle.astro';
 import Icon from '../components/ui/Icon.astro';
 
 import NetworkSettings from '../components/settings/NetworkSettings.astro';
 import SpotifySettings from '../components/settings/SpotifySettings.astro';
+import WeatherSettings from '../components/settings/WeatherSettings.astro';
 ---
 
 <DashboardLayout title="Settings">
   <div class="space-y-6 max-w-2xl">
+
+    <Card title='Sync New Device'>
+      <div class="space-y-4">
+        <button id="generate-qr" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+          Generate QR Code
+        </button>
+        <div id="qr-code" class="mt-4"></div>
+      </div>
+    </Card>
 
     <NetworkSettings />
     
@@ -29,11 +39,14 @@ import SpotifySettings from '../components/settings/SpotifySettings.astro';
     </Card>
 
     <SpotifySettings />
+    <WeatherSettings />
 
   </div>
 </DashboardLayout>
 
 <script>
+  import QRCode from 'qrcode';
+
   function getSettings() {
     const settings = localStorage.getItem('settings');
     let settingsDict = {};
@@ -71,5 +84,19 @@ import SpotifySettings from '../components/settings/SpotifySettings.astro';
 
   notificationsToggle.addEventListener('change', (event) => {
     handleNotificationToggle((event.target as HTMLInputElement).checked);
+  });
+
+  document.getElementById('generate-qr').addEventListener('click', async () => {
+    const qrCodeContainer = document.getElementById('qr-code');
+    qrCodeContainer.innerHTML = '';
+    const allData = { ...localStorage };
+    try {
+      const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(allData));
+      const img = document.createElement('img');
+      img.src = qrCodeDataUrl;
+      qrCodeContainer.appendChild(img);
+    } catch (error) {
+      console.error('Failed to generate QR code:', error);
+    }
   });
 </script>

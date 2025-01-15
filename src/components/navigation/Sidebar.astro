@@ -1,6 +1,7 @@
 ---
 import Icon from '../ui/Icon.astro';
 import Logo from '../header/Logo.astro';
+import WeatherCard from '../ui/WeatherCard.astro';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: 'dashboard' },
@@ -37,6 +38,7 @@ const currentPath = Astro.url.pathname;
           </a>
         </li>
       ))}
+      <WeatherCard />
     </ul>
   </nav>
 </aside>

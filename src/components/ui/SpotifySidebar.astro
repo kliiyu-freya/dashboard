@@ -409,8 +409,6 @@ import Icon from "./Icon.astro"
 
     invisibleLast.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_previous' });
-        coverImage.classList.add('scale-125');
-        coverImage.style.transition = 'transform 0.1s ease-in-out';
     });
 
     nextButton.addEventListener('click', () => {
@@ -423,8 +421,6 @@ import Icon from "./Icon.astro"
 
     invisibleNext.addEventListener('click', () => {
         sendWebSocketMessage({ type: 'spotify_next' });
-        coverImage.classList.add('scale-125');
-        coverImage.style.transition = 'transform 0.1s ease-in-out';
     });
 
     let last_volume = '100';

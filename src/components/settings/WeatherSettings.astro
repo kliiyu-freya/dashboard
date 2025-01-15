@@ -1,0 +1,66 @@
+---
+import Card from '../ui/Card.astro';
+---
+
+<Card title="Weather Settings">
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <span>OpenWeatherMap API Key</span>
+            <input type="text" id="weather-callback-link" class="w-1/2 p-2 border rounded-md" placeholder="API Key" value=""/>
+        </div>
+        <div class="flex items-center justify-between">
+            <span>Location</span>
+            <input type="text" id="weather-settings-location" class="w-1/2 p-2 border rounded-md" placeholder="London" value=""/>
+        </div>
+        <div id="update-box" class="flex items-center justify-between">
+            <button id="weather-update-button" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600">
+                Update
+            </button>
+        </div>
+    </div>
+</Card>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const storedData = localStorage.getItem('weatherData');
+        if (storedData) {
+            const weatherData = JSON.parse(storedData);
+            (document.getElementById('weather-callback-link') as HTMLInputElement).value = weatherData.api_key || '';
+            (document.getElementById('weather-settings-location') as HTMLInputElement).value = weatherData.location || '';
+        }
+    })
+
+    document.getElementById('weather-update-button').addEventListener('click', async () => {
+        const apiKey = (document.getElementById('weather-callback-link') as HTMLInputElement).value;
+        const wLocation = (document.getElementById('weather-settings-location') as HTMLInputElement).value;
+        
+        if (!apiKey) {
+            return;
+        }
+
+        if (!wLocation) {
+            return;
+        }
+
+        const newData = {
+            api_key: apiKey,
+            location: wLocation,
+            weather_data: {}
+        } 
+        localStorage.setItem('weatherData', JSON.stringify(newData));
+
+        try {
+            const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${wLocation}&appid=${apiKey}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch weather data');
+            }
+            const weatherData = await response.json();
+            newData.weather_data = weatherData;
+            localStorage.setItem('weatherData', JSON.stringify(newData));
+            window.dispatchEvent(new CustomEvent('weather_update'))
+            location.reload();
+        } catch (error) {
+            console.error('Error fetching weather data:', error);
+        }
+    });
+</script>
