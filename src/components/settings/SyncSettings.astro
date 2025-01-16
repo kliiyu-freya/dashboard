@@ -1,0 +1,131 @@
+---
+import Card from '../ui/Card.astro';
+---
+
+<Card title="Sync New Device">
+  <div class="space-y-4">
+    <!-- Generate QR Code Button -->
+    <button
+      id="generate-qr"
+      class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+    >
+      Generate QR Code
+    </button>
+
+    <!-- Scan QR Code Button -->
+    <button
+      id="scan-qr"
+      class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+    >
+      Scan QR Code
+    </button>
+
+    <!-- QR Code Display -->
+    <div id="qr-code" class="mt-4"></div>
+
+    <!-- Fullscreen Square Scanner -->
+    <div
+      id="fullscreen-scanner"
+      class="hidden fixed top-0 left-0 w-full h-full bg-black bg-opacity-90 z-50 flex items-center justify-center"
+    >
+      <div
+        id="qr-reader"
+        class="w-[60vw] h-[70vh] border border-gray-300 rounded-md shadow-lg bg-white overflow-hidden"
+      ></div>
+      <div
+        id="scan-result"
+        class="absolute bottom-10 px-4 py-2 text-center text-lg text-green-500 bg-green-100 rounded-md"
+      >
+        Waiting for scan...
+      </div>
+      <button
+        id="close-scanner"
+        class="absolute top-4 right-4 px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+</Card>
+
+<script>
+  import QRCode from "qrcode";
+  import { Html5Qrcode } from "html5-qrcode";
+
+  const generateQrButton = document.getElementById("generate-qr");
+  const scanQrButton = document.getElementById("scan-qr");
+  const qrCodeContainer = document.getElementById("qr-code");
+  const fullscreenScanner = document.getElementById("fullscreen-scanner");
+  const scanResult = document.getElementById("scan-result");
+  const closeScannerButton = document.getElementById("close-scanner");
+
+  let qrScanner;
+
+  // Generate QR Code
+  async function generateSyncCode() {
+    const allData = { ...localStorage };
+    const dataString = JSON.stringify(allData);
+    return await QRCode.toDataURL(dataString);
+  }
+
+  generateQrButton.addEventListener("click", async () => {
+    qrCodeContainer.innerHTML = "";
+    try {
+      const qrCodeDataUrl = await generateSyncCode();
+      const img = document.createElement("img");
+      img.src = qrCodeDataUrl;
+      img.classList.add("rounded-md", "shadow-md");
+      qrCodeContainer.appendChild(img);
+    } catch (error) {
+      console.error("Failed to generate QR code:", error);
+    }
+  });
+
+  // Start QR Scanner (Square)
+  scanQrButton.addEventListener("click", async () => {
+    fullscreenScanner.classList.remove("hidden");
+
+    if (!qrScanner) {
+        qrScanner = new Html5Qrcode("qr-reader");
+    }
+
+    try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length) {
+        const cameraId = cameras[0].id; // Default to the first camera
+
+        // Start scanning
+        await qrScanner.start(
+            cameraId,
+            {
+            fps: 10, // Frames per second
+            qrbox: { width: 250, height: 250 }, // Square scanning area
+            },
+            (decodedText) => {
+                scanResult.textContent = `Scanned: ${decodedText}`;
+                scanResult.classList.replace("bg-green-100", "bg-green-200");
+            },
+            (errorMessage) => {
+                scanResult.textContent = "No QR code detected. Please try again.";
+                console.error(`Scanning error: ${errorMessage}`);
+            }
+        );
+        } else {
+            alert("No cameras found. Please check your device.");
+        }
+    } catch (error) {
+        alert("Failed to access the camera. Please check permissions or device compatibility.");
+        console.error("Camera access error:", error);
+    }
+    });
+
+    // Close Scanner
+    closeScannerButton.addEventListener("click", async () => {
+    if (qrScanner) {
+        await qrScanner.stop();
+        fullscreenScanner.classList.add("hidden");
+        scanResult.textContent = "Waiting for scan...";
+        scanResult.classList.replace("bg-green-200", "bg-green-100");
+    }
+    });
+</script>
